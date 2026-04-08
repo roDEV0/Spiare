@@ -8,12 +8,13 @@ from tortoise import Tortoise
 from utils.http_requests import HTTPRequester
 import logging
 from routines.tracking import Tracking
+from discord import app_commands
 
 class BotContainer(commands.Bot):
     def __init__(self, nation: str):
         dotenv.load_dotenv()
 
-        super().__init__(command_prefix="!", intents=discord.Intents(messages=True, guilds=True, members=True))
+        super().__init__(command_prefix="!", intents=discord.Intents(messages=True, guilds=True, members=True, message_content=True))
         self.current_time = time.time()
 
         self.database_url = os.getenv("DATABASE_URL")
@@ -33,10 +34,14 @@ class BotContainer(commands.Bot):
         await self.add_cog(Tracking(self))
         print("Routines loaded!")
 
+        await self.tree.sync()
+
     async def on_ready(self):
         print(f"Logged in as {self.user}!")
+        await self.tree.sync()
 
     async def close(self):
+        await Tortoise.close_connections()
         await super().close()
         if self.session:
             await self.session.close()
