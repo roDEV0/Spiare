@@ -3,7 +3,7 @@ import aiohttp
 class HTTPRequester:
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session
-        self.api_url = "https://api.earthmc.net/v3/aurora"
+        self.api_url = "https://api.earthmc.net/v4"
 
     async def post_request(self, category: str, topic: str):
         async with self.session.post(f"{self.api_url}/{category}", json={"query": [topic]}) as resp:

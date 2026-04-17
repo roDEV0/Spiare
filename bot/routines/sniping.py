@@ -1,7 +1,7 @@
 from discord.ext import tasks, commands
-from utils.http_requests import post_request, get_request
+from shared.http_requests import post_request, get_request
 import time
-from main import BotContainer
+from bot.main import BotContainer
 
 class Sniping(commands.Cog):
     def __init__(self, bot: BotContainer):
