@@ -6,6 +6,7 @@ import os
 from PIL import Image
 import tortoise
 from io import BytesIO
+import asyncio
 
 class Session:
     def __init__(self, player: str):
@@ -64,6 +65,7 @@ async def check_sessions(requester, tracker):
         await Active.bulk_create(active_creations, ignore_conflicts=True)
 
         lost_players_data = await requester.post_request_batch("players", list(lost_players))
+        print(lost_players_data)
         lost_uuid_map = {player["uuid"]: player for player in lost_players_data}
 
         await Players.bulk_create([Players(uuid=uuid) for uuid in lost_uuid_map.keys()], ignore_conflicts=True)
@@ -127,16 +129,19 @@ async def check_sessions(requester, tracker):
         print(f"Error in check_sessions: {e}")
 
 async def get_positions(requester, tracker):
-    try:
-        print("Getting positions...")
-        online_data = await requester.map_request()
-        for player in online_data["players"]:
-            uuid = player["uuid"]
-            formatted_uuid = f"{uuid[:8]}-{uuid[8:12]}-{uuid[12:16]}-{uuid[16:20]}-{uuid[20:]}"
-            if formatted_uuid in tracker.sessions.keys():
-                await tracker.sessions[formatted_uuid].append_position((player["x"], player["y"], player["z"]))
-    except Exception as e:
-        print(f"Error in get_positions: {e}")
+    print("Getting positions...")
+    online_data = await requester.map_request()
+
+    def format_uuid(uuid: str) -> str:
+        return f"{uuid[:8]}-{uuid[8:12]}-{uuid[12:16]}-{uuid[16:20]}-{uuid[20:]}"
+
+    tasks = [
+        tracker.sessions[fmt_uuid].append_position((player["x"], player["y"], player["z"]))
+        for player in online_data["players"]
+        if (fmt_uuid := format_uuid(player["uuid"])) in tracker.sessions
+    ]
+
+    await asyncio.gather(*tasks)
 
 async def update_map(requester):
     print(os.getcwd())
@@ -167,12 +172,18 @@ async def check_town_blocks(requester):
         town_list = await Towns.filter(uuid__in=list(town_data_map.keys())).all()
         town_objects = {town.uuid: town for town in town_list}
 
+        to_update = []
+
         for uuid, data in town_data_map.items():
             town = town_objects.get(uuid)
             if town is None:
                 continue
 
             town.town_blocks = data["coordinates"]["townBlocks"]
-            await town.save()
+            to_update.append(town)
+
+        if to_update:
+            await Towns.bulk_update(to_update, fields=["town_blocks"])
+
     except Exception as e:
         print(f"Error in check_town_blocks: {e}")
