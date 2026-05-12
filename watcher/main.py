@@ -3,13 +3,12 @@ from tortoise import Tortoise
 import aiohttp
 import os
 from shared.http_requests import HTTPRequester
-from watcher.jobs import check_sessions, get_positions, update_map, check_town_blocks
+from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks
 import asyncio
-import datetime
 from shared.database import Active
-from watcher.jobs import Session
+from watcher.jobs.objective import Session
+from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
 from apscheduler.events import EVENT_JOB_ERROR
-import asyncpg
 
 from watcher.notify import Notifier
 
@@ -42,6 +41,9 @@ async def main():
     get_positions_job = scheduler.add_job(get_positions, "interval", seconds=30, args=[requester, tracker])
     update_map_job = scheduler.add_job(update_map, "interval", hours=12, args=[requester])
     check_town_blocks_job = scheduler.add_job(check_town_blocks, "interval", minutes=10, args=[requester])
+
+    player_snapshot_job = scheduler.add_job(take_player_snapshot, "cron", hour=12, minute=0, second=0)
+    town_snapshot_job = scheduler.add_job(take_town_snapshot, "cron", hour=12, minute=0, second=0)
 
     await load_sessions(tracker)
 

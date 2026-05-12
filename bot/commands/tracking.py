@@ -2,13 +2,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 import time
-import datetime
 from shared.database import Players, Sessions, Towns
-import json
 from PIL import Image, ImageDraw
 import asyncio
 import tempfile
 import os
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 class Session:
     def __init__(self, player: str):
@@ -42,7 +44,7 @@ class Tracking(commands.Cog):
 
             sessions = await Sessions.filter(player=player_obj).order_by('-id').limit(10)
         else:
-            sessions = await Sessions.all().prefetch_related("player").order_by('-id').limit(10)
+            sessions = await Sessions.all().order_by('-id').limit(10)
 
         def format_duration(total_seconds):
             total_seconds = int(total_seconds)
@@ -57,7 +59,7 @@ class Tracking(commands.Cog):
             if player:
                 lines.append(f"`#{session.id}` <t:{start_ts}:f> — {duration}")
             else:
-                player_obj = session.player
+                player_obj = await Players.get(id=session.player)
                 lines.append(f"`#{session.id}`: {player_obj.username} - <t:{start_ts}:f> — {duration}")
 
         description = "\n".join(lines) if lines else "No sessions found."
@@ -74,12 +76,12 @@ class Tracking(commands.Cog):
     async def replay_session(self, interaction: discord.Interaction, session_id: int):
         await interaction.response.defer()
 
-        session = await Sessions.get_or_none(id=session_id).prefetch_related("player", "town")
+        session = await Sessions.get_or_none(id=session_id)
         if not session:
             await interaction.followup.send("Session does not exist")
             return
 
-        player = session.player
+        player = await Players.get(id=session.player)
         positions = session.positions
 
         # EMC size: 129,024 x 64,512
@@ -98,8 +100,10 @@ class Tracking(commands.Cog):
             title=f"Session #{session_id} Replay",
             color=discord.Color.from_rgb(55, 120, 72),
         )
+        town = await Towns.get(id=session.town) if session.town else None
+
         embed.set_author(name=player.username)
-        embed.add_field(name="Town", value=session.town.name or "None", inline=True)
+        embed.add_field(name="Town", value=town or "None", inline=True)
         embed.add_field(name="Duration", value=duration_str, inline=True)
         embed.add_field(name="Positions Recorded", value=str(len(positions)), inline=True)
         embed.add_field(name="Started", value=f"<t:{start_ts}:F>", inline=False)
@@ -158,3 +162,95 @@ class Tracking(commands.Cog):
         )
 
         return tmp_path
+
+    @app_commands.command(name="player-heatmap", description="Show a heatmap of a player's positions")
+    async def player_heatmap(self, interaction: discord.Interaction, player: str):
+        await interaction.response.defer()
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            tmp_path = tmp.name
+
+        player_object = await Players.get_or_none(username=player)
+        player_sessions = await Sessions.filter(player=player_object.id).order_by('-id')
+        positions = [position for player_session in player_sessions for position in player_session.positions]
+
+        if not positions:
+            await interaction.followup.send(f"No positions found for **{player}**")
+            return
+
+        grid = np.zeros((161, 322))
+
+        for position in positions:
+            print(f"Original: {position}")
+            translated_x = int((position[0] + 64512) / 129024 * 322)
+            translated_z = int((position[2] + 32256) / 64512 * 161)
+
+            print(f"Translated: {translated_x}, {translated_z}")
+
+            grid[translated_z, translated_x] += 1
+
+        plasma_transparent_colors = [
+            (0.000, (13 / 255, 8 / 255, 135 / 255, 0.00)),
+            (0.001, (13 / 255, 8 / 255, 135 / 255, 0.05)),
+            (0.050, (70 / 255, 3 / 255, 159 / 255, 0.50)),
+            (0.100, (114 / 255, 1 / 255, 168 / 255, 0.70)),
+            (0.200, (156 / 255, 23 / 255, 158 / 255, 0.85)),
+            (0.300, (188 / 255, 55 / 255, 122 / 255, 1.00)),
+            (0.400, (213 / 255, 95 / 255, 80 / 255, 1.00)),
+            (0.500, (232 / 255, 148 / 255, 47 / 255, 1.00)),
+            (0.600, (243 / 255, 188 / 255, 10 / 255, 1.00)),
+            (0.700, (249 / 255, 213 / 255, 10 / 255, 1.00)),
+            (0.800, (254 / 255, 232 / 255, 37 / 255, 1.00)),
+            (1.000, (240 / 255, 249 / 255, 33 / 255, 1.00)),
+        ]
+        colormap_custom = matplotlib.colors.LinearSegmentedColormap.from_list("custom", plasma_transparent_colors, N=256)
+
+        fig, ax = plt.subplots(figsize=(4096 / 100, 2048 / 100), dpi=100)
+        ax.imshow(
+            np.log1p(grid),
+            aspect='auto',
+            interpolation='nearest',
+            cmap=colormap_custom,
+            vmin=0,
+            vmax=np.log1p(grid.max())
+        )
+        ax.axis('off')
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        plt.savefig(tmp_path, bbox_inches='tight', pad_inches=0, dpi=100)
+        plt.close(fig)
+
+        heatmap_img = Image.open(tmp_path).convert("RGBA")
+        data = np.array(heatmap_img)
+
+        r, g, b, a = data[:, :, 0], data[:, :, 1], data[:, :, 2], data[:, :, 3]
+        white_mask = (r >= 240) & (g >= 240) & (b >= 240)
+        data[:, :, 3] = np.where(white_mask, 0, a)
+
+        heatmap_img = Image.fromarray(data, "RGBA")
+
+        full_map = Image.open("shared/map.png").convert("RGBA")
+        full_map.paste(heatmap_img, (0, 0), heatmap_img)
+
+        full_map.save(tmp_path)
+
+        start_date = int(player_sessions[0].start_date.timestamp())
+        total_time = int(sum(session.total_time for session in player_sessions) // 1)
+
+        hours, remainder = divmod(total_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        duration_str = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+
+        embed = discord.Embed(
+            title=f"{player} Location Heatmap",
+            color=discord.Color.from_rgb(55, 120, 72),
+        )
+        embed.set_author(name=player)
+        embed.add_field(name="Started Tracking", value=f"<t:{start_date}:F>" or "None", inline=True)
+        embed.add_field(name="Total Playtime", value=duration_str, inline=True)
+        embed.add_field(name="Positions Recorded", value=str(len(positions)), inline=True)
+        embed.set_image(url="attachment://heatmap.png")
+
+        image_file = discord.File(tmp_path, filename="heatmap.png")
+        await interaction.followup.send(embed=embed, file=image_file)
+
+        os.remove(tmp_path)

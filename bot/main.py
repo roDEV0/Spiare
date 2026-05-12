@@ -7,8 +7,25 @@ import dotenv
 from tortoise import Tortoise
 from shared.http_requests import HTTPRequester
 from bot.commands.tracking import Tracking
-from bot.routines.citizens import Citizens
+from bot.commands.settings import Settings
+from bot.listeners.verification import Verification
 
+connection_config = {
+        "connections": {
+            "default": os.environ.get("SERVER_DATABASE_URL"),
+            "discord": os.environ.get("DISCORD_DATABASE_URL"),
+        },
+        "apps": {
+            "server_models": {
+                "models": ["shared.database"],
+                "default_connection": "default",
+            },
+            "discord_models": {
+                "models": ["shared.discord_database"],
+                "default_connection": "discord",
+            }
+        },
+    }
 
 class BotContainer(commands.Bot):
     def __init__(self, nation: str):
@@ -26,16 +43,20 @@ class BotContainer(commands.Bot):
     async def setup_hook(self):
         self.session = aiohttp.ClientSession()
         self.http_requester = HTTPRequester(self.session)
-        await Tortoise.init(db_url=self.database_url, modules={"models": ["shared.database"]})
+        await Tortoise.init(config=connection_config)
         try:
             conn = Tortoise.get_connection("default")
             await conn.execute_query("SELECT 1")
-            print("Connection test successful!")
+            print("Default: Connection test successful!")
+            conn = Tortoise.get_connection("discord")
+            await conn.execute_query("SELECT 1")
+            print("Discord: Connection test successful!")
         except Exception as e:
             print(f"Connection test failed: {e}")
 
         await self.add_cog(Tracking(self))
-        await self.add_cog(Citizens(self))
+        await self.add_cog(Settings(self))
+        await self.add_cog(Verification(self))
         print("Routines loaded!")
 
         await self.tree.sync()
