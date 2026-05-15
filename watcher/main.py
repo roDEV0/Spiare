@@ -3,7 +3,7 @@ from tortoise import Tortoise
 import aiohttp
 import os
 from shared.http_requests import HTTPRequester
-from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks
+from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks, clean_dead_sessions
 import asyncio
 from shared.database import Active
 from watcher.jobs.objective import Session
@@ -37,13 +37,47 @@ async def main():
     await Tortoise.init(db_url=database_url, modules={"models": ["shared.database"]})
     print("DB initialized successfully")
 
-    check_sessions_job = scheduler.add_job(check_sessions, "interval", minutes=5, args=[requester, tracker])
-    get_positions_job = scheduler.add_job(get_positions, "interval", seconds=30, args=[requester, tracker])
-    update_map_job = scheduler.add_job(update_map, "interval", hours=12, args=[requester])
-    check_town_blocks_job = scheduler.add_job(check_town_blocks, "interval", minutes=10, args=[requester])
+    scheduler.add_job(
+        check_sessions, "interval", minutes=5,
+        args=[requester, tracker],
+        id="check_sessions",  # stable ID
+        replace_existing=True  # overwrite if already in store
+    )
+    scheduler.add_job(
+        get_positions, "interval", seconds=60,
+        args=[requester, tracker],
+        id="get_positions",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        update_map, "interval", hours=12,
+        args=[requester],
+        id="update_map",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        check_town_blocks, "interval", minutes=60,
+        args=[requester],
+        id="check_town_blocks",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        take_player_snapshot, "cron", hour=12, minute=0, second=0,
+        id="player_snapshot",
+        replace_existing=True
+    )
+    scheduler.add_job(
+        take_town_snapshot, "cron", hour=12, minute=0, second=0,
+        id="town_snapshot",
+        replace_existing=True
+    )
 
-    player_snapshot_job = scheduler.add_job(take_player_snapshot, "cron", hour=12, minute=0, second=0)
-    town_snapshot_job = scheduler.add_job(take_town_snapshot, "cron", hour=12, minute=0, second=0)
+    scheduler.add_job(
+        clean_dead_sessions, "interval", minutes=60,
+        args=[requester],
+        id="clean_dead_sessions",
+        replace_existing=True
+    )
 
     await load_sessions(tracker)
 
@@ -51,6 +85,7 @@ async def main():
     await get_positions(requester, tracker)
     await update_map(requester)
     await check_town_blocks(requester)
+    await clean_dead_sessions(requester)
 
     scheduler.add_listener(job_error_listener, EVENT_JOB_ERROR)
 
