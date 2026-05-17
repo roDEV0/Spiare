@@ -28,7 +28,7 @@ async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, reque
         sessions_dict = {}
         for session in sessions:
             sessions_dict[str(session.id)] = {
-                "start_date": session.start_date,
+                "start_date": session.start_date.isoformat(),
                 "time": session.total_time
             }
 
