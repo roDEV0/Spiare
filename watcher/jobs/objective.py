@@ -23,7 +23,7 @@ class Session:
     @classmethod
     async def create(cls, player: str):
         session = cls(player)
-        session.active_obj = await Active(player=player).create()
+        session.active_obj = await Active.create(player=player)
         return session
 
     @classmethod
