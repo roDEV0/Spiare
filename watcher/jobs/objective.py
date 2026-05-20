@@ -68,9 +68,19 @@ async def check_sessions(requester, tracker):
             await Active.bulk_create(active_creations, ignore_conflicts=True)
 
             # Get lost player data in batches of 100
-            lost_results, unfetched = await asyncio.gather(*(get_valid_data(requester, "players", list(lost_players)[i:i+100]) for i in range(0, len(lost_players), 100)))
+            if not lost_players:
+                return
 
-            for player in unfetched:
+            results = await asyncio.gather(
+                *(get_valid_data(requester, "players", list(lost_players)[i:i + 100])
+                  for i in range(0, len(lost_players), 100))
+            )
+
+            lost_results, unfetched = zip(*results)
+
+            unfetched_list = [player for lost_result in unfetched for player in lost_result]
+
+            for player in unfetched_list:
                 print(f"{player} does not appear to exist on the API")
                 if player in tracker.sessions:
                     del tracker.sessions[player]
