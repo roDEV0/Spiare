@@ -23,7 +23,7 @@ class Session:
     @classmethod
     async def create(cls, player: str):
         session = cls(player)
-        session.active_obj = await Active(player=player)
+        session.active_obj = await Active(player=player).create()
         return session
 
     @classmethod
@@ -68,7 +68,14 @@ async def check_sessions(requester, tracker):
             await Active.bulk_create(active_creations, ignore_conflicts=True)
 
             # Get lost player data in batches of 100
-            lost_results = await asyncio.gather(*(get_valid_data(requester, "players", list(lost_players)[i:i+100]) for i in range(0, len(lost_players), 100)))
+            lost_results, unfetched = await asyncio.gather(*(get_valid_data(requester, "players", list(lost_players)[i:i+100]) for i in range(0, len(lost_players), 100)))
+
+            for player in unfetched:
+                print(f"{player} does not appear to exist on the API")
+                if player in tracker.sessions:
+                    del tracker.sessions[player]
+                    await Active(player=player).delete()
+
             lost_players_data = [player for lost_result in lost_results for player in lost_result]
             lost_uuid_map = {player["uuid"]: player for player in lost_players_data}
 
@@ -192,7 +199,7 @@ async def check_town_blocks(requester):
         towns = await requester.get_request("towns")
 
         async def update_town_blocks(town_list: list):
-            town_data = await get_valid_data(requester, "towns", [town["uuid"] for town in town_list])
+            town_data, _ = await get_valid_data(requester, "towns", [town["uuid"] for town in town_list])
 
             town_data_map = {town["uuid"]: town for town in town_data}
             town_list = await Towns.filter(uuid__in=list(town_data_map.keys())).all()
@@ -232,9 +239,10 @@ async def get_valid_data(requester, category, get_list, retries=3):
     check_list = await requester.post_request_batch(category, get_list)
     if len(check_list) != len(get_list):
         if retries <= 0:
-            raise ValueError("Could not get valid data")
+            print(f"{len(get_list) - len(check_list)} objects were unable to be fetched")
+            return check_list, (get_list - check_list)
         return await get_valid_data(requester, category, get_list, retries - 1)
-    return check_list
+    return check_list, []
 
 async def safe_rename(town_obj : Towns, new_name, requester):
     print(f"Renaming {town_obj.name} to {new_name}")

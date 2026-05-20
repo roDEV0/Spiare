@@ -25,8 +25,10 @@ async def load_sessions(tracker):
     print(f"Loaded {len(active_sessions)} active sessions")
 
 async def main():
+    await Tortoise.close_connections()
+
     database_url = os.environ.get("DATABASE_URL")
-    timeout = aiohttp.ClientTimeout(total=30)
+    timeout = aiohttp.ClientTimeout(total=10)
     session = aiohttp.ClientSession(timeout=timeout)
     requester = HTTPRequester(session)
     notifier = Notifier()
@@ -93,7 +95,7 @@ async def main():
 
     try:
         await asyncio.Event().wait()  # Block forever
-    finally:
+    except KeyboardInterrupt:
         scheduler.shutdown()
         await Tortoise.close_connections()
         await session.close()
