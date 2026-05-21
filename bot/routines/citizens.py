@@ -1,6 +1,6 @@
 from discord.ext import tasks, commands
 import time
-from main import BotContainer
+from bot.main import BotContainer
 
 class Citizens(commands.Cog):
     def __init__(self, bot: BotContainer):

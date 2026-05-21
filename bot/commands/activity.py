@@ -1,5 +1,5 @@
 from discord.ext import commands
-from main import BotContainer
+from bot.main import BotContainer
 
 class Activity(commands.Cog):
     def __init__(self, bot: BotContainer):
