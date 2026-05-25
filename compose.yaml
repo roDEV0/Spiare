@@ -1,0 +1,9 @@
+name: "spiare"
+
+services:
+  watcher:
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    build:
+      context: .
+      dockerfile: watcher/Dockerfile

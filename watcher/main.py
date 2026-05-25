@@ -28,7 +28,7 @@ async def main():
     await Tortoise.close_connections()
 
     database_url = os.environ.get("DATABASE_URL")
-    timeout = aiohttp.ClientTimeout(total=10)
+    timeout = aiohttp.ClientTimeout(total=100)
     session = aiohttp.ClientSession(timeout=timeout)
     requester = HTTPRequester(session)
     notifier = Notifier()

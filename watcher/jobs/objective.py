@@ -84,7 +84,7 @@ async def check_sessions(requester, tracker):
                 print(f"{player} does not appear to exist on the API")
                 if player in tracker.sessions:
                     del tracker.sessions[player]
-                    await Active(player=player).delete()
+                    await Active(player=player).delete() if await Active.filter(player=player).exists() else None
 
             lost_players_data = [player for lost_result in lost_results for player in lost_result]
             lost_uuid_map = {player["uuid"]: player for player in lost_players_data}
@@ -179,9 +179,8 @@ async def get_positions(requester, tracker):
         return f"{uuid[:8]}-{uuid[8:12]}-{uuid[12:16]}-{uuid[16:20]}-{uuid[20:]}"
 
     tasks = [
-        tracker.sessions[fmt_uuid].append_position((player["x"], player["y"], player["z"]))
+        tracker.sessions[format_uuid(player["uuid"])].append_position((player["x"], player["y"], player["z"]) if (format_uuid(player["uuid"])) in tracker.sessions else [None, None, None])
         for player in online_data["players"]
-        if (fmt_uuid := format_uuid(player["uuid"])) in tracker.sessions
     ]
 
     await asyncio.gather(*tasks)
@@ -247,10 +246,11 @@ async def clean_dead_sessions(requester):
 
 async def get_valid_data(requester, category, get_list, retries=3):
     check_list = await requester.post_request_batch(category, get_list)
+    print(check_list)
     if len(check_list) != len(get_list):
         if retries <= 0:
             print(f"{len(get_list) - len(check_list)} objects were unable to be fetched")
-            return check_list, (get_list - check_list)
+            return check_list, (set(get_list) - {item["uuid"] for item in check_list})
         return await get_valid_data(requester, category, get_list, retries - 1)
     return check_list, []
 
