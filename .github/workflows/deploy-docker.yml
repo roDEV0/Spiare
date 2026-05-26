@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Setup Cloudflared
-        uses: and-fm/cloudflared-ssh-action@v3
+        uses: and-fm/cloudflared-ssh-action@v4
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
