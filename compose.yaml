@@ -7,3 +7,5 @@ services:
     build:
       context: .
       dockerfile: watcher/Dockerfile
+      extra_hosts:
+        database: ${DATABASE_HOST}
