@@ -10,8 +10,6 @@ from watcher.jobs.objective import Session
 from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
 from apscheduler.events import EVENT_JOB_ERROR
 
-from watcher.notify import Notifier
-
 scheduler = AsyncIOScheduler()
 
 class Tracker:
@@ -31,8 +29,6 @@ async def main():
     timeout = aiohttp.ClientTimeout(total=100)
     session = aiohttp.ClientSession(timeout=timeout)
     requester = HTTPRequester(session)
-    notifier = Notifier()
-    await notifier.create()
 
     tracker = Tracker()
 
