@@ -11,16 +11,14 @@ jobs:
 
     steps:
       - name: Setup Cloudflared
-        uses: AnimMouse/setup-cloudflared@v2
-
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v1
+        uses: and-fm/cloudflared-ssh-action@v3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            set -e
-            cd ~/Spiare
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          commands: |
+            cd Spiare
             git pull origin master
-            docker compose up -d --remove-orphans
+            docker compose up -d --build
