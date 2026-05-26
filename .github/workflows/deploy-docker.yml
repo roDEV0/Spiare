@@ -20,5 +20,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           commands: |
             cd Spiare
+            export DATABASE_URL=${{ secrets.DATABASE_URL }}
+            export DATABASE_HOST=${{ secrets.DATABASE_HOST }}
             git pull origin master
             docker compose up -d --build
