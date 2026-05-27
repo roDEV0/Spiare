@@ -171,17 +171,26 @@ async def check_sessions(requester, tracker):
             print(f"Error in check_sessions: {e}")
             traceback.print_exc()
 
+def format_uuid(uuid: str) -> str:
+    if "-" in uuid:
+        return uuid
+    return f"{uuid[:8]}-{uuid[8:12]}-{uuid[12:16]}-{uuid[16:20]}-{uuid[20:]}"
+
+async def append_position(player: str, position: tuple, tracker):
+    try:
+        if player in tracker.sessions:
+            if position is None:
+                await tracker.sessions[player].append_position([None, None, None])
+            else:
+                await tracker.sessions[player].append_position(position)
+    except Exception as e:
+        print(f"Error in append_position: {e}")
+
 async def get_positions(requester, tracker):
     print("Getting positions...")
     online_data = await requester.map_request()
 
-    def format_uuid(uuid: str) -> str:
-        return f"{uuid[:8]}-{uuid[8:12]}-{uuid[12:16]}-{uuid[16:20]}-{uuid[20:]}"
-
-    tasks = [
-        tracker.sessions[format_uuid(player["uuid"])].append_position((player["x"], player["y"], player["z"]) if (format_uuid(player["uuid"])) in tracker.sessions else [None, None, None])
-        for player in online_data["players"]
-    ]
+    tasks = [append_position(format_uuid(player["uuid"]), (player["x"], player["y"], player["z"]), tracker) for player in online_data["players"]]
 
     await asyncio.gather(*tasks)
 

@@ -4,6 +4,7 @@ async def take_player_snapshot():
     snapshot_objects = []
     print("Taking player snapshots...")
     for player in await Players.all():
+
         sessions = await Sessions.filter(player=player.id)
 
         player_town = await Towns.filter(id=player.town).first()

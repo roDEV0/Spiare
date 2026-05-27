@@ -1,14 +1,17 @@
+import asyncio
+import os
+
+import aiohttp
+from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from tortoise import Tortoise
-import aiohttp
-import os
-from shared.http_requests import HTTPRequester
-from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks, clean_dead_sessions
-import asyncio
+
 from shared.database import Active
+from shared.http_requests import HTTPRequester
 from watcher.jobs.objective import Session
+from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks, clean_dead_sessions
 from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
-from apscheduler.events import EVENT_JOB_ERROR
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 scheduler = AsyncIOScheduler()
 
@@ -22,6 +25,12 @@ async def load_sessions(tracker):
         tracker.sessions[session.player] = await Session.load(session)
     print(f"Loaded {len(active_sessions)} active sessions")
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=60))
+async def attempt_connection(url):
+    await Tortoise.init(db_url=url, modules={"models": ["shared.database"]})
+    print("DB initialized successfully")
+    return 0
+
 async def main():
     await Tortoise.close_connections()
 
@@ -32,8 +41,7 @@ async def main():
 
     tracker = Tracker()
 
-    await Tortoise.init(db_url=database_url, modules={"models": ["shared.database"]})
-    print("DB initialized successfully")
+    await attempt_connection(database_url)
 
     scheduler.add_job(
         check_sessions, "interval", minutes=5,
