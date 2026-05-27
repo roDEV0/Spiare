@@ -13,7 +13,7 @@ async def take_player_snapshot():
         for session in sessions:
             sessions_dict[str(session.id)] = {
                 "positions": session.positions,
-                "start_date": session.start_date,
+                "start_date": session.start_date.strftime("%Y-%m-%d %H:%M:%S"),
                 "total_time": session.total_time
             }
 
