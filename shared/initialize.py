@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS verifications.verifications (
 ALTER TABLE verifications.verifications ADD CONSTRAINT fk_verifications_servers FOREIGN KEY (server) REFERENCES configs.servers(id);
 """
 
+
 async def initialize_db():
     conn = await asyncpg.connect(os.environ.get("DATABASE_URL"))
     try:
@@ -200,5 +201,6 @@ async def initialize_db():
         print("DB initialized successfully")
     finally:
         await conn.close()
+
 
 asyncio.run(initialize_db())

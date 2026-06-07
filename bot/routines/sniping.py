@@ -3,6 +3,7 @@ from shared.http_requests import post_request, get_request
 import time
 from bot.main import BotContainer
 
+
 class Sniping(commands.Cog):
     def __init__(self, bot: BotContainer):
         self.bot = bot
@@ -27,6 +28,12 @@ class Sniping(commands.Cog):
             last_player = town_data["mayor"]["name"]
             player_data = await post_request(self.bot, "players", last_player)
 
-            days_left = ((60 * 60 * 24 * 42) - (self.current_time - player_data["timestamps"]["lastOnline"])) / (60 * 60 * 24)
+            days_left = (
+                (60 * 60 * 24 * 42)
+                - (self.current_time - player_data["timestamps"]["lastOnline"])
+            ) / (60 * 60 * 24)
 
-            self.snipe_towns[town_data["name"]] = (days_left, len(town_data["residents"]))
+            self.snipe_towns[town_data["name"]] = (
+                days_left,
+                len(town_data["residents"]),
+            )

@@ -9,8 +9,10 @@ import tempfile
 import os
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
 
 class Session:
     def __init__(self, player: str):
@@ -26,13 +28,16 @@ class Session:
 
         return self.player, self.start_time, total_time, self.positions
 
+
 class Tracking(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.sessions = {}
         self.online_players = []
 
-    @app_commands.command(name="sessions", description="Shows the most recent sessions of a player")
+    @app_commands.command(
+        name="sessions", description="Shows the most recent sessions of a player"
+    )
     async def sessions(self, interaction: discord.Interaction, player: str = None):
         await interaction.response.defer()
 
@@ -42,15 +47,19 @@ class Tracking(commands.Cog):
                 await interaction.response.send_message(f"`{player}` is not registered")
                 return
 
-            sessions = await Sessions.filter(player=player_obj).order_by('-id').limit(10)
+            sessions = (
+                await Sessions.filter(player=player_obj).order_by("-id").limit(10)
+            )
         else:
-            sessions = await Sessions.all().order_by('-id').limit(10)
+            sessions = await Sessions.all().order_by("-id").limit(10)
 
         def format_duration(total_seconds):
             total_seconds = int(total_seconds)
             hours, remainder = divmod(total_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
-            return f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+            return (
+                f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+            )
 
         lines = []
         for session in sessions:
@@ -60,7 +69,9 @@ class Tracking(commands.Cog):
                 lines.append(f"`#{session.id}` <t:{start_ts}:f> — {duration}")
             else:
                 player_obj = await Players.get(id=session.player)
-                lines.append(f"`#{session.id}`: {player_obj.username} - <t:{start_ts}:f> — {duration}")
+                lines.append(
+                    f"`#{session.id}`: {player_obj.username} - <t:{start_ts}:f> — {duration}"
+                )
 
         description = "\n".join(lines) if lines else "No sessions found."
         embed = discord.Embed(
@@ -71,8 +82,10 @@ class Tracking(commands.Cog):
 
         await interaction.followup.send(embed=embed)
 
-
-    @app_commands.command(name="replay-session", description="Replay a user's session using the session ID")
+    @app_commands.command(
+        name="replay-session",
+        description="Replay a user's session using the session ID",
+    )
     async def replay_session(self, interaction: discord.Interaction, session_id: int):
         await interaction.response.defer()
 
@@ -92,7 +105,9 @@ class Tracking(commands.Cog):
         total_seconds = int(session.total_time)
         hours, remainder = divmod(total_seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
-        duration_str = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        duration_str = (
+            f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        )
 
         start_ts = int(session.start_date.timestamp())
 
@@ -105,7 +120,9 @@ class Tracking(commands.Cog):
         embed.set_author(name=player.username)
         embed.add_field(name="Town", value=town or "None", inline=True)
         embed.add_field(name="Duration", value=duration_str, inline=True)
-        embed.add_field(name="Positions Recorded", value=str(len(positions)), inline=True)
+        embed.add_field(
+            name="Positions Recorded", value=str(len(positions)), inline=True
+        )
         embed.add_field(name="Started", value=f"<t:{start_ts}:F>", inline=False)
         if session.first_session:
             embed.set_footer(text="First session")
@@ -129,7 +146,7 @@ class Tracking(commands.Cog):
             step = len(positions) / 100
             positions = [positions[int(i * step)] for i in range(100)]
 
-        for index, position in (enumerate(positions)):
+        for index, position in enumerate(positions):
 
             x_scaled = (position[0] * (4096 / 129024)) + 2058
             z_scaled = (position[2] * (2048 / 64512)) + 1024
@@ -142,7 +159,13 @@ class Tracking(commands.Cog):
                 vertices = [(x_scaled, z_scaled), (prev_coords[0], prev_coords[1])]
                 draw_map.line(vertices, fill=(0, 0, 0), width=4)
 
-            draw_map.rounded_rectangle([(x_scaled - 15, z_scaled - 15), (x_scaled + 15, z_scaled + 15)], 5, (55, 148, 117) if index == 0 else (59, 34, 97), (0, 0, 0), 2)
+            draw_map.rounded_rectangle(
+                [(x_scaled - 15, z_scaled - 15), (x_scaled + 15, z_scaled + 15)],
+                5,
+                (55, 148, 117) if index == 0 else (59, 34, 97),
+                (0, 0, 0),
+                2,
+            )
             prev_coords = (x_scaled, z_scaled)
 
             frames.append(map_img.copy())
@@ -158,12 +181,14 @@ class Tracking(commands.Cog):
             save_all=True,
             append_images=frames[1:],
             duration=durations,
-            loop=0
+            loop=0,
         )
 
         return tmp_path
 
-    @app_commands.command(name="player-heatmap", description="Show a heatmap of a player's positions")
+    @app_commands.command(
+        name="player-heatmap", description="Show a heatmap of a player's positions"
+    )
     async def player_heatmap(self, interaction: discord.Interaction, player: str):
         await interaction.response.defer()
 
@@ -171,8 +196,12 @@ class Tracking(commands.Cog):
             tmp_path = tmp.name
 
         player_object = await Players.get_or_none(username=player)
-        player_sessions = await Sessions.filter(player=player_object.id).order_by('-id')
-        positions = [position for player_session in player_sessions for position in player_session.positions]
+        player_sessions = await Sessions.filter(player=player_object.id).order_by("-id")
+        positions = [
+            position
+            for player_session in player_sessions
+            for position in player_session.positions
+        ]
 
         if not positions:
             await interaction.followup.send(f"No positions found for **{player}**")
@@ -203,20 +232,22 @@ class Tracking(commands.Cog):
             (0.800, (254 / 255, 232 / 255, 37 / 255, 1.00)),
             (1.000, (240 / 255, 249 / 255, 33 / 255, 1.00)),
         ]
-        colormap_custom = matplotlib.colors.LinearSegmentedColormap.from_list("custom", plasma_transparent_colors, N=256)
+        colormap_custom = matplotlib.colors.LinearSegmentedColormap.from_list(
+            "custom", plasma_transparent_colors, N=256
+        )
 
         fig, ax = plt.subplots(figsize=(4096 / 100, 2048 / 100), dpi=100)
         ax.imshow(
             np.log1p(grid),
-            aspect='auto',
-            interpolation='nearest',
+            aspect="auto",
+            interpolation="nearest",
             cmap=colormap_custom,
             vmin=0,
-            vmax=np.log1p(grid.max())
+            vmax=np.log1p(grid.max()),
         )
-        ax.axis('off')
+        ax.axis("off")
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        plt.savefig(tmp_path, bbox_inches='tight', pad_inches=0, dpi=100)
+        plt.savefig(tmp_path, bbox_inches="tight", pad_inches=0, dpi=100)
         plt.close(fig)
 
         heatmap_img = Image.open(tmp_path).convert("RGBA")
@@ -238,16 +269,22 @@ class Tracking(commands.Cog):
 
         hours, remainder = divmod(total_time, 3600)
         minutes, seconds = divmod(remainder, 60)
-        duration_str = f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        duration_str = (
+            f"{hours}h {minutes}m {seconds}s" if hours else f"{minutes}m {seconds}s"
+        )
 
         embed = discord.Embed(
             title=f"{player} Location Heatmap",
             color=discord.Color.from_rgb(55, 120, 72),
         )
         embed.set_author(name=player)
-        embed.add_field(name="Started Tracking", value=f"<t:{start_date}:F>" or "None", inline=True)
+        embed.add_field(
+            name="Started Tracking", value=f"<t:{start_date}:F>" or "None", inline=True
+        )
         embed.add_field(name="Total Playtime", value=duration_str, inline=True)
-        embed.add_field(name="Positions Recorded", value=str(len(positions)), inline=True)
+        embed.add_field(
+            name="Positions Recorded", value=str(len(positions)), inline=True
+        )
         embed.set_image(url="attachment://heatmap.png")
 
         image_file = discord.File(tmp_path, filename="heatmap.png")

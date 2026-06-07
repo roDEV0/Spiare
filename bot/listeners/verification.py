@@ -3,6 +3,7 @@ from discord.ext import tasks, commands
 from discord import app_commands
 from shared.discord_database import Config, Verifications
 
+
 class Verification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -22,23 +23,28 @@ class Verification(commands.Cog):
         channel = message.channel
         guild = message.guild
 
-
         if not player_data:
             await channel.send(f"**{username}** is not registered on the server")
             return
 
         is_citizen = (
-                not server_config.nation
-                or player_data[0]["nation"]["name"] == server_config.nation
+            not server_config.nation
+            or player_data[0]["nation"]["name"] == server_config.nation
         )
 
-        minecraft_verified = await Verifications.filter(minecraft_uuid=player_data[0]["uuid"], server=server_config.id)
-        discord_verified = await Verifications.filter(username=message.author.name, server=server_config.id)
+        minecraft_verified = await Verifications.filter(
+            minecraft_uuid=player_data[0]["uuid"], server=server_config.id
+        )
+        discord_verified = await Verifications.filter(
+            username=message.author.name, server=server_config.id
+        )
         if minecraft_verified:
             await channel.send(f"**{username}** is already verified")
             return
         if discord_verified:
-            await channel.send(f"You are already verified as **{discord_verified[0].minecraft_username}**")
+            await channel.send(
+                f"You are already verified as **{discord_verified[0].minecraft_username}**"
+            )
             return
 
         if not is_citizen:
@@ -50,7 +56,7 @@ class Verification(commands.Cog):
                 minecraft_uuid=player_data[0]["uuid"],
                 town=player_data[0]["town"]["name"],
                 server=server_config.id,
-                citizen=False
+                citizen=False,
             )
             role = discord.utils.get(guild.roles, id=server_config.foreigner_role_id)
         else:
@@ -64,7 +70,7 @@ class Verification(commands.Cog):
                 minecraft_uuid=player_data[0]["uuid"],
                 town=player_data[0]["town"]["name"],
                 server=server_config.id,
-                citizen=True
+                citizen=True,
             )
             role = discord.utils.get(guild.roles, id=server_config.citizen_role_id)
 
