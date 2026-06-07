@@ -114,7 +114,8 @@ async def setup_lost_sessions(lost_results, unfetched_list):
         data_map = {player["uuid"]: player for player in lost_results}
 
         async with in_transaction():
-            await Players.bulk_create([Players(uuid=uuid) for uuid in data_map.keys()], ignore_conflicts=True)
+            existing_uuids = await Players.filter(uuid__in=data_map.keys()).values_list("uuid", flat=True)
+            await Players.bulk_create([Players(uuid=uuid) for uuid in data_map.keys() if uuid not in existing_uuids], ignore_conflicts=True)
             player_db_rows = await Players.filter(uuid__in=data_map.keys()).all()
 
         rows_map = {player.uuid: player for player in player_db_rows}
@@ -212,7 +213,7 @@ async def safe_username(player_obj : Players, requester):
     print(f"Renaming {player_obj.username}")
     try:
         player_obj.username = f"tmp_{uuid.uuid4().hex}"
-        player_data = await get_valid_data(requester, "players", [player_obj.uuid])
+        player_data = await requester.post_request("players", player_obj.uuid)
 
         if player_data and player_data[0]["uuid"] == player_obj.uuid:
             async with in_transaction():
@@ -232,9 +233,9 @@ async def update_mayor(town_obj: Towns, rows_map, requester):
         async with in_transaction():
             await town_obj.save(update_fields=["mayor", "previous_mayors"])
 
-async def update_player_town(player_obj: Players, requester):
+async def update_player_town(player_obj: Players, data_map, requester):
     try:
-        player_data = await get_valid_data(requester, "players", [player_obj.uuid])
+        player_data = await requester.post_request("players", player_obj.uuid)
         if player_data and player_data[0]["town"]["uuid"] != player_obj.town:
             async with in_transaction():
                 town_obj = await Towns.get(uuid=player_data[0]["town"]["uuid"])
