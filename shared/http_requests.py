@@ -10,17 +10,26 @@ class HTTPRequester:
     async def post_request(self, category: str, topic: str):
         async with self.semaphore:
             async with self.session.post(f"{self.api_url}/{category}", json={"query": [topic]}) as resp:
-                return await resp.json()
+                if resp.status != 200:
+                    return None
+                else:
+                    return await resp.json()
 
     async def post_request_batch(self, category: str, topics: list[str]):
         async with self.semaphore:
             async with self.session.post(f"{self.api_url}/{category}", json={"query": topics}) as resp:
-                return await resp.json()
+                if resp.status != 200:
+                    return None
+                else:
+                    return await resp.json()
 
     async def get_request(self, category: str):
         async with self.semaphore:
             async with self.session.get(f"{self.api_url}/{category}") as resp:
-                return await resp.json()
+                if resp.status != 200:
+                    return None
+                else:
+                    return await resp.json()
 
     async def map_tile_request(self, x: int, z: int):
         async with self.semaphore:

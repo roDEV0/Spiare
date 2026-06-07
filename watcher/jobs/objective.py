@@ -54,6 +54,9 @@ async def check_sessions(requester, tracker):
     async with in_transaction():
         try:
             online_players = await requester.get_request("online")
+            if not online_players:
+                print("Online players couldn't be fetched")
+                return
             online_uuids = {player["uuid"] for player in online_players["players"]}
 
             new_players = online_uuids - set(tracker.sessions)
@@ -113,7 +116,11 @@ async def check_sessions(requester, tracker):
             session_deletions = []
 
             for player in lost_players:
-                session = tracker.sessions.pop(player)
+                # TODO: Check why Keys might be missing here
+                try:
+                    session = tracker.sessions.pop(player)
+                except KeyError:
+                    continue
                 player_uuid, start_date, total_time, positions = session.end_data()
 
                 if session.active_obj and session.active_obj.player is not None:
@@ -215,6 +222,9 @@ async def check_town_blocks(requester):
     try:
         print("Checking townblocks...")
         towns = await requester.get_request("towns")
+        if not towns:
+            print("Towns couldn't be fetched")
+            return
 
         async def update_town_blocks(town_list: list):
             town_data, _ = await get_valid_data(requester, "towns", [town["uuid"] for town in town_list])
@@ -245,6 +255,9 @@ async def check_town_blocks(requester):
 async def clean_dead_sessions(requester):
     print("Doing some spring cleaning...")
     online_players = await requester.get_request("online")
+    if not online_players:
+        print("Online players couldn't be fetched")
+        return
     deleted_sessions = 0
     for active in await Active.all():
         if active.player not in {player["uuid"] for player in online_players["players"]}:
