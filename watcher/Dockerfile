@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY .. /spiare
 
-CMD ["python", "-m", "watcher.main"]
+CMD ["python", "-m", "-u", "watcher.main"]

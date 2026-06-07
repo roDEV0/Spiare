@@ -3,6 +3,7 @@ name: "spiare"
 services:
   watcher:
     environment:
+      PYTHONUNBUFFERED: 1
       DATABASE_URL: ${DATABASE_URL}
     extra_hosts:
       - database:${DATABASE_HOST}
