@@ -9,7 +9,6 @@ from shared.database import Sessions, Players, Towns, Active
 from watcher.trigger.transfers import town_transfer_trigger
 import time
 from shared.utils import get_valid_data
-import json
 import datetime
 import uuid
 
@@ -233,7 +232,7 @@ async def update_mayor(town_obj: Towns, rows_map, requester):
         async with in_transaction():
             await town_obj.save(update_fields=["mayor", "previous_mayors"])
 
-async def update_player_town(player_obj: Players, data_map, requester):
+async def update_player_town(player_obj: Players, requester):
     try:
         player_data = await requester.post_request("players", player_obj.uuid)
         if player_data and player_data[0]["town"]["uuid"] != player_obj.town:
