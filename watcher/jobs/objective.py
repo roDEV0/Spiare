@@ -13,7 +13,7 @@ from watcher.trigger.transfers import town_transfer_trigger
 import traceback
 import uuid
 from shared.utils import get_valid_data
-from check_sessions import handle_memory_sessions, get_lost_player_data, setup_lost_sessions, create_sessions
+from watcher.jobs.check_sessions import handle_memory_sessions, get_lost_player_data, setup_lost_sessions, create_sessions
 
 async def check_sessions(requester, tracker):
     try:
