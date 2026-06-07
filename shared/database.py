@@ -3,6 +3,7 @@ from tortoise.models import Model
 
 # OBJECTIVES
 
+
 class Towns(Model):
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=100, unique=True, null=True)
@@ -27,7 +28,9 @@ class Players(Model):
         table = "players"
         schema = "players"
 
+
 # SESSIONS
+
 
 class Sessions(Model):
     id = fields.IntField(pk=True)
@@ -52,7 +55,9 @@ class Active(Model):
         table = "sessions"
         schema = "active"
 
+
 # EVENTS
+
 
 class TownTransfer(Model):
     id = fields.IntField(pk=True)
@@ -65,6 +70,7 @@ class TownTransfer(Model):
     class Meta:
         table = "town_transfers"
         schema = "transfers"
+
 
 class TownTransferPlayerSnapshot(Model):
     id = fields.IntField(pk=True)
@@ -80,7 +86,9 @@ class TownTransferPlayerSnapshot(Model):
         table = "town_transfer_snapshots"
         schema = "transfers"
 
+
 # SNAPSHOTS
+
 
 class PlayerSnapshot(Model):
     id = fields.IntField(pk=True)
@@ -93,6 +101,7 @@ class PlayerSnapshot(Model):
     class Meta:
         table = "player_snapshots"
         schema = "player_snapshots"
+
 
 class TownSnapshot(Model):
     id = fields.IntField(pk=True)
@@ -107,6 +116,7 @@ class TownSnapshot(Model):
     class Meta:
         table = "town_snapshots"
         schema = "town_snapshots"
+
 
 # SHOPPING
 

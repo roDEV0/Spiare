@@ -11,27 +11,33 @@ from bot.commands.settings import Settings
 from bot.listeners.verification import Verification
 
 connection_config = {
-        "connections": {
-            "default": os.environ.get("SERVER_DATABASE_URL"),
-            "discord": os.environ.get("DISCORD_DATABASE_URL"),
+    "connections": {
+        "default": os.environ.get("SERVER_DATABASE_URL"),
+        "discord": os.environ.get("DISCORD_DATABASE_URL"),
+    },
+    "apps": {
+        "server_models": {
+            "models": ["shared.database"],
+            "default_connection": "default",
         },
-        "apps": {
-            "server_models": {
-                "models": ["shared.database"],
-                "default_connection": "default",
-            },
-            "discord_models": {
-                "models": ["shared.discord_database"],
-                "default_connection": "discord",
-            }
+        "discord_models": {
+            "models": ["shared.discord_database"],
+            "default_connection": "discord",
         },
-    }
+    },
+}
+
 
 class BotContainer(commands.Bot):
     def __init__(self, nation: str):
         dotenv.load_dotenv(override=False)
 
-        super().__init__(command_prefix="!", intents=discord.Intents(messages=True, guilds=True, members=True, message_content=True))
+        super().__init__(
+            command_prefix="!",
+            intents=discord.Intents(
+                messages=True, guilds=True, members=True, message_content=True
+            ),
+        )
         self.current_time = time.time()
 
         self.database_url = os.environ.get("DATABASE_URL")
@@ -70,6 +76,7 @@ class BotContainer(commands.Bot):
         await Tortoise.close_connections()
         if self.session:
             await self.session.close()
+
 
 bot = BotContainer(nation="Panama")
 bot.run(os.environ.get("TOKEN"))

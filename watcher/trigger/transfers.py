@@ -3,13 +3,18 @@ from shared.http_requests import HTTPRequester
 from datetime import datetime
 from shared.utils import get_valid_data
 
-async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, requester: HTTPRequester):
+
+async def town_transfer_trigger(
+    old_mayor: int, new_mayor: int, town: int, requester: HTTPRequester
+):
     old_mayor_db = await Players.filter(id=old_mayor).first()
     days_difference = 0
     if old_mayor_db:
-        old_mayor_data = await get_valid_data(requester, "players", [old_mayor_db.uuid])
+        old_mayor_data = await requester.post_request("players", old_mayor_db.uuid)
         if not old_mayor_data:
-            print(f"Old mayor {old_mayor_db.username} ({old_mayor_db.uuid}) could not be fetched")
+            print(
+                f"Old mayor {old_mayor_db.username} ({old_mayor_db.uuid}) could not be fetched"
+            )
             return
 
         last_online = old_mayor_data[0]["timestamps"]["lastOnline"]
@@ -21,7 +26,7 @@ async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, reque
         old_mayor=old_mayor,
         new_mayor=new_mayor,
         town=town,
-        from_inactivity=True if days_difference > 40 else False
+        from_inactivity=True if days_difference > 40 else False,
     )
 
     await town_transfer.save()
@@ -35,7 +40,7 @@ async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, reque
         for session in sessions:
             sessions_dict[str(session.id)] = {
                 "start_date": session.start_date.isoformat(),
-                "time": session.total_time
+                "time": session.total_time,
             }
 
         snapshot = TownTransferPlayerSnapshot(
@@ -44,7 +49,7 @@ async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, reque
             selected=True if player.id == new_mayor else False,
             sessions=sessions_dict,
             total_sessions=len(sessions_dict),
-            playtime=sum(session["time"] for session in sessions_dict.values())
+            playtime=sum(session["time"] for session in sessions_dict.values()),
         )
 
         player_snapshots.append(snapshot)
