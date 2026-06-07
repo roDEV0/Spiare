@@ -19,6 +19,9 @@ class Tracker:
     def __init__(self):
         self.sessions = {}
 
+    def get_sessions(self):
+        return set(self.sessions.keys())
+
 async def load_sessions(tracker):
     active_sessions = await Active.all()
     for session in active_sessions:
