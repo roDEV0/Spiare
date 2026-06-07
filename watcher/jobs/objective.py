@@ -63,13 +63,8 @@ async def check_sessions(requester, tracker):
             new_players = online_uuids - set(tracker.sessions)
             lost_players = set(tracker.sessions) - online_uuids
 
-            active_creations = []
-
             for player in new_players:
                 tracker.sessions[player] = await Session.create(player)
-                active_creations.append(tracker.sessions[player].active_obj)
-
-            await Active.bulk_create(active_creations, ignore_conflicts=True)
 
             # Get lost player data in batches of 100
             if not lost_players:
@@ -197,6 +192,9 @@ async def append_position(player: str, position: tuple, tracker):
 async def get_positions(requester, tracker):
     print("Getting positions...")
     online_data = await requester.map_request()
+    if not online_data:
+        print("Online data couldn't be fetched")
+        return
 
     tasks = [append_position(format_uuid(player["uuid"]), (player["x"], player["y"], player["z"]), tracker) for player in online_data["players"]]
 
@@ -259,13 +257,8 @@ async def clean_dead_sessions(requester):
     if not online_players:
         print("Online players couldn't be fetched")
         return
-    deleted_sessions = 0
-    for active in await Active.all():
-        if active.player not in {player["uuid"] for player in online_players["players"]}:
-            await active.delete()
-            deleted_sessions += 1
-
-    print(f"Removed {deleted_sessions} dead sessions")
+    await Active.filter(player__not_in={player["uuid"] for player in online_players["players"]}).delete()
+    print(f"Removed dead sessions")
 
 async def safe_rename(town_obj : Towns, new_name, requester):
     print(f"Renaming {town_obj.name} to {new_name}")

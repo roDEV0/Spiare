@@ -3,14 +3,16 @@ from shared.database import TownSnapshot, PlayerSnapshot, Players, Towns, Sessio
 async def take_player_snapshot():
     snapshot_objects = []
     print("Taking player snapshots...")
+    sessions = await Sessions.all()
+    towns = await Towns.all()
+
     for player in await Players.all():
 
-        sessions = await Sessions.filter(player=player.id)
-
-        player_town = await Towns.filter(id=player.town).first()
+        player_sessions = [session for session in sessions if session.player == player.id]
+        player_town = [town for town in towns if town.id == player.town][0]
 
         sessions_dict = {}
-        for session in sessions:
+        for session in player_sessions:
             sessions_dict[str(session.id)] = {
                 "positions": session.positions,
                 "start_date": session.start_date.strftime("%Y-%m-%d %H:%M:%S"),
@@ -33,8 +35,10 @@ async def take_town_snapshot():
     print("Taking town snapshots...")
     snapshot_objects = []
 
+    players = await Players.all()
+
     for town in await Towns.all():
-        citizens = await Players.filter(town=town.id)
+        citizens = [player for player in players if player.town == town.id]
 
         town_snapshot = TownSnapshot(
             town=town.id,

@@ -46,43 +46,50 @@ async def main():
     scheduler.add_job(
         check_sessions, "interval", minutes=5,
         args=[requester, tracker],
-        id="check_sessions",  # stable ID
-        replace_existing=True  # overwrite if already in store
+        id="check_sessions",
+        replace_existing=True,
+        max_instances=1
     )
     scheduler.add_job(
         get_positions, "interval", seconds=60,
         args=[requester, tracker],
         id="get_positions",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
     scheduler.add_job(
         update_map, "interval", hours=12,
         args=[requester],
         id="update_map",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
     scheduler.add_job(
         check_town_blocks, "interval", minutes=60,
         args=[requester],
         id="check_town_blocks",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
     scheduler.add_job(
         take_player_snapshot, "cron", hour=12, minute=0, second=0,
         id="player_snapshot",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
     scheduler.add_job(
         take_town_snapshot, "cron", hour=12, minute=0, second=0,
         id="town_snapshot",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
 
     scheduler.add_job(
         clean_dead_sessions, "interval", minutes=60,
         args=[requester],
         id="clean_dead_sessions",
-        replace_existing=True
+        replace_existing=True,
+        max_instances=1
     )
 
     await load_sessions(tracker)
