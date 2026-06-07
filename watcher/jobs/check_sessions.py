@@ -4,6 +4,7 @@ import tortoise
 from tortoise.transactions import in_transaction
 
 from shared.database import Sessions, Players, Towns, Active
+from watcher.trigger.transfers import town_transfer_trigger
 import time
 from shared.utils import get_valid_data
 import json
@@ -190,6 +191,7 @@ async def safe_rename(town_obj : Towns, new_name, requester):
 async def update_mayor(town_obj, requester):
     town_data = await requester.post_request("towns", town_obj.uuid)
     if town_obj.mayor != town_data[0]["mayor"]:
+        await town_transfer_trigger(town_obj.mayor, town_data[0]["mayor"], town_obj.id, requester)
         town_obj.previous_mayors.append(town_obj.mayor)
         town_obj.mayor = town_data[0]["mayor"]
 
