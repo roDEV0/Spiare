@@ -1,10 +1,14 @@
 from shared.database import TownTransfer, Players, TownTransferPlayerSnapshot, Sessions
 from shared.http_requests import HTTPRequester
 from datetime import datetime
+from shared.utils import get_valid_data
 
 async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, requester: HTTPRequester):
     old_mayor_db = await Players.get(id=old_mayor)
-    old_mayor_data = await requester.post_request("players", old_mayor_db.uuid)
+    old_mayor_data = await get_valid_data(requester, "players", [old_mayor_db.uuid])
+    if not old_mayor_data:
+        print(f"Old mayor {old_mayor_db.username} ({old_mayor_db.uuid}) could not be fetched")
+        return
 
     last_online = old_mayor_data[0]["timestamps"]["lastOnline"]
     last_online_date = datetime.fromtimestamp(last_online / 1000)

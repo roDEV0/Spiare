@@ -12,6 +12,7 @@ import asyncio
 from watcher.trigger.transfers import town_transfer_trigger
 import traceback
 import uuid
+from shared.utils import get_valid_data
 
 class Session:
     def __init__(self, player: str):
@@ -266,15 +267,6 @@ async def clean_dead_sessions(requester):
 
     print(f"Removed {deleted_sessions} dead sessions")
 
-async def get_valid_data(requester, category, get_list, retries=3):
-    check_list = await requester.post_request_batch(category, get_list)
-    if len(check_list) != len(get_list):
-        if retries <= 0:
-            print(f"{len(get_list) - len(check_list)} objects were unable to be fetched")
-            return check_list, (set(get_list) - {item["uuid"] for item in check_list})
-        return await get_valid_data(requester, category, get_list, retries - 1)
-    return check_list, []
-
 async def safe_rename(town_obj : Towns, new_name, requester):
     print(f"Renaming {town_obj.name} to {new_name}")
     try:
@@ -286,6 +278,7 @@ async def safe_rename(town_obj : Towns, new_name, requester):
 
         if not other_data:
             other_obj.name = f"deleted_{other_obj.name}"
+            await other_obj.save(update_fields=["name"])
         else:
             other_obj.name = other_data[0]["name"]
             await other_obj.save(update_fields=["name"])

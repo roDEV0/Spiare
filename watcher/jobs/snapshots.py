@@ -37,7 +37,6 @@ async def take_town_snapshot():
         citizens = await Players.filter(town=town.id)
 
         town_snapshot = TownSnapshot(
-            name=town.name,
             town=town.id,
             mayor=town.mayor,
             previous_mayors=town.previous_mayors,
