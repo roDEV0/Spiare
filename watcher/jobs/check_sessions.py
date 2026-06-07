@@ -148,6 +148,7 @@ async def create_sessions(data_map, towns_map, rows_map, requester, tracker):
             player, start_date, total_time, positions = session
             first_session = True if (start_date.timestamp() - (data_map[player]["timestamps"]["registered"] / 1000)) < (60 * 9) else False
             town_obj = towns_map[data_map[player]["town"]["uuid"]] if data_map[player]["town"]["uuid"] else None
+            player_obj = rows_map[player]
 
             if town_obj:
                 if town_obj.name != data_map[player]["town"]["name"]:
@@ -155,6 +156,12 @@ async def create_sessions(data_map, towns_map, rows_map, requester, tracker):
 
                 if (data_map[player]["status"]["isMayor"]) and (town_obj.mayor != rows_map[player].id):
                     await update_mayor(town_obj, rows_map, requester)
+
+            if player_obj.username != data_map[player]["name"]:
+                await safe_username(player_obj, requester)
+
+            if player_obj.town != towns_map[data_map[player]["town"]["uuid"]].id:
+                await update_player_town(player_obj, requester)
 
             info_map[player] = {
                 "town": town_obj.id if town_obj else None,
@@ -201,6 +208,20 @@ async def safe_rename(town_obj : Towns, new_name, requester):
         town_obj.name = new_name
         await town_obj.save(update_fields=["name"])
 
+async def safe_username(player_obj : Players, requester):
+    print(f"Renaming {player_obj.username}")
+    try:
+        player_obj.username = f"tmp_{uuid.uuid4().hex}"
+        player_data = await get_valid_data(requester, "players", [player_obj.uuid])
+
+        if player_data and player_data[0]["uuid"] == player_obj.uuid:
+            async with in_transaction():
+                player_obj.username = player_data[0]["name"]
+                await player_obj.save(update_fields=["username"])
+    except Exception as e:
+        print(f"Error in safe_username: {e}")
+        traceback.print_exc()
+
 async def update_mayor(town_obj: Towns, rows_map, requester):
     town_data = await requester.post_request("towns", town_obj.uuid)
     if town_obj.mayor != town_data[0]["mayor"]:
@@ -210,3 +231,15 @@ async def update_mayor(town_obj: Towns, rows_map, requester):
 
         async with in_transaction():
             await town_obj.save(update_fields=["mayor", "previous_mayors"])
+
+async def update_player_town(player_obj: Players, requester):
+    try:
+        player_data = await get_valid_data(requester, "players", [player_obj.uuid])
+        if player_data and player_data[0]["town"]["uuid"] != player_obj.town:
+            async with in_transaction():
+                town_obj = await Towns.get(uuid=player_data[0]["town"]["uuid"])
+                player_obj.town = town_obj.id
+                await player_obj.save(update_fields=["town"])
+    except Exception as e:
+        print(f"Error in update_player_town: {e}")
+        traceback.print_exc()
