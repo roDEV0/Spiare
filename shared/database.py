@@ -56,7 +56,7 @@ class Active(Model):
 
 class TownTransfer(Model):
     id = fields.IntField(pk=True)
-    old_mayor = fields.IntField()
+    old_mayor = fields.IntField(null=True, default=None)
     new_mayor = fields.IntField()
     town = fields.IntField()
     date = fields.DatetimeField(auto_now_add=True)

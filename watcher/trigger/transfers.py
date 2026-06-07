@@ -4,16 +4,18 @@ from datetime import datetime
 from shared.utils import get_valid_data
 
 async def town_transfer_trigger(old_mayor: int, new_mayor: int, town: int, requester: HTTPRequester):
-    old_mayor_db = await Players.get(id=old_mayor)
-    old_mayor_data = await get_valid_data(requester, "players", [old_mayor_db.uuid])
-    if not old_mayor_data:
-        print(f"Old mayor {old_mayor_db.username} ({old_mayor_db.uuid}) could not be fetched")
-        return
+    old_mayor_db = await Players.filter(id=old_mayor).first()
+    days_difference = 0
+    if old_mayor_db:
+        old_mayor_data = await get_valid_data(requester, "players", [old_mayor_db.uuid])
+        if not old_mayor_data:
+            print(f"Old mayor {old_mayor_db.username} ({old_mayor_db.uuid}) could not be fetched")
+            return
 
-    last_online = old_mayor_data[0]["timestamps"]["lastOnline"]
-    last_online_date = datetime.fromtimestamp(last_online / 1000)
+        last_online = old_mayor_data[0]["timestamps"]["lastOnline"]
+        last_online_date = datetime.fromtimestamp(last_online / 1000)
 
-    days_difference = (datetime.now() - last_online_date).days
+        days_difference = (datetime.now() - last_online_date).days
 
     town_transfer = TownTransfer(
         old_mayor=old_mayor,

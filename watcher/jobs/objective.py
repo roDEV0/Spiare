@@ -14,7 +14,7 @@ async def check_sessions(requester, tracker):
             return
         data, unfetched = await get_lost_player_data(lost_players, requester)
         data_map, rows_map, towns_map = await setup_lost_sessions(data, unfetched)
-        await create_sessions(data_map, towns_map, rows_map, tracker)
+        await create_sessions(data_map, towns_map, rows_map, requester, tracker)
     except Exception as e:
         print(f"Error in check_sessions: {e}")
         traceback.print_exc()

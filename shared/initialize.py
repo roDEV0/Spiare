@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS shopping.items (
 
 CREATE TABLE IF NOT EXISTS transfers.town_transfers (
     id serial primary key,
-    old_mayor int not null,
+    old_mayor int,
     new_mayor int not null,
     town int not null,
     date timestamptz not null default now(),

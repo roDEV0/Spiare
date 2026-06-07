@@ -1,4 +1,6 @@
 import asyncio
+import traceback
+
 import tortoise
 
 from tortoise.transactions import in_transaction
@@ -21,7 +23,7 @@ class Session:
     @classmethod
     async def create(cls, player: str):
         session = cls(player)
-        start_date = time.time()
+        start_date = datetime.datetime.now()
         session.start_date = start_date
         session.active_obj = await Active.create(
             player=player,
@@ -33,7 +35,7 @@ class Session:
     @classmethod
     async def load(cls, active):
         session = cls(active.player)
-        session.start_date = active.start_date.timestamp()
+        session.start_date = active.start_date
         session.active_obj = active
         session.positions = active.positions
         return session
@@ -45,10 +47,10 @@ class Session:
         await self.active_obj.save(update_fields=["positions"])
 
     def end_data(self):
-        end_date = time.time()
+        end_date = datetime.datetime.now().timestamp()
 
         # start_date = datetime.datetime.fromtimestamp(self.start_time)
-        total_time = end_date - self.start_date
+        total_time = end_date - self.start_date.timestamp()
 
         return self.player, self.start_date, total_time, self.positions
 
@@ -76,9 +78,12 @@ async def handle_memory_sessions(requester, tracker):
             print("No lost players")
             return []
 
+        print("Completed handle_memory_sessions successfully!")
+
         return lost_players
     except Exception as e:
         print(f"Error in handle_memory_sessions: {e}")
+        traceback.print_exc()
 
 async def get_lost_player_data(lost_players, requester):
     try:
@@ -94,6 +99,8 @@ async def get_lost_player_data(lost_players, requester):
 
         unfetched_list = [player for lost_result in unfetched for player in lost_result]
         lost_players_data = [player for lost_result in lost_results for player in lost_result]
+
+        print("Completed get_lost_player_data successfully!")
 
         return lost_players_data, unfetched_list
     except Exception as e:
@@ -124,11 +131,13 @@ async def setup_lost_sessions(lost_results, unfetched_list):
         town_objects = await Towns.filter(uuid__in=seen_towns).all()
         towns_map = {town.uuid: town for town in town_objects}
 
+        print("Completed setup_lost_sessions successfully!")
+
         return data_map, rows_map, towns_map
     except Exception as e:
         print(f"Error in setup_lost_sessions: {e}")
 
-async def create_sessions(data_map, towns_map, rows_map, tracker):
+async def create_sessions(data_map, towns_map, rows_map, requester, tracker):
     try:
         mem_sessions = [tracker.sessions.pop(player, None) for player in data_map.keys()]
         sessions_data = [session.end_data() for session in mem_sessions if session]
@@ -137,14 +146,15 @@ async def create_sessions(data_map, towns_map, rows_map, tracker):
 
         for session in sessions_data:
             player, start_date, total_time, positions = session
-            first_session = True if (start_date - (data_map[player]["timestamps"]["registered"] / 1000)) < (60 * 9) else False
+            first_session = True if (start_date.timestamp() - (data_map[player]["timestamps"]["registered"] / 1000)) < (60 * 9) else False
             town_obj = towns_map[data_map[player]["town"]["uuid"]] if data_map[player]["town"]["uuid"] else None
 
-            if town_obj.name != data_map[player]["town"]["name"]:
-                await safe_rename(town_obj, data_map[player]["town"]["name"], tracker.requester)
+            if town_obj:
+                if town_obj.name != data_map[player]["town"]["name"]:
+                    await safe_rename(town_obj, data_map[player]["town"]["name"], requester)
 
-            if (data_map[player]["status"]["isMayor"]) and (town_obj.mayor != data_map[player]["id"]):
-                await update_mayor(town_obj, tracker.requester)
+                if (data_map[player]["status"]["isMayor"]) and (town_obj.mayor != rows_map[player].id):
+                    await update_mayor(town_obj, rows_map, requester)
 
             info_map[player] = {
                 "town": town_obj.id if town_obj else None,
@@ -154,7 +164,7 @@ async def create_sessions(data_map, towns_map, rows_map, tracker):
         async with in_transaction():
             await Sessions.bulk_create([Sessions(
                 player=rows_map[player].id,
-                start_date=datetime.datetime.fromtimestamp(start_date, tz=datetime.timezone.utc),
+                start_date=start_date.strftime("%Y-%m-%d %H:%M:%S"),
                 town=info_map[player]["town"],
                 first_session=info_map[player]["first_session"],
                 total_time=total_time,
@@ -162,9 +172,12 @@ async def create_sessions(data_map, towns_map, rows_map, tracker):
                 for player, start_date, total_time, positions in sessions_data])
             await Active.filter(player__in=data_map.keys()).delete()
 
+            print("Completed create_sessions successfully!")
+
         return sessions_data
     except Exception as e:
         print(f"Error in create_sessions: {e}")
+        traceback.print_exc()
 
 async def safe_rename(town_obj : Towns, new_name, requester):
     print(f"Renaming {town_obj.name} to {new_name}")
@@ -188,12 +201,12 @@ async def safe_rename(town_obj : Towns, new_name, requester):
         town_obj.name = new_name
         await town_obj.save(update_fields=["name"])
 
-async def update_mayor(town_obj, requester):
+async def update_mayor(town_obj: Towns, rows_map, requester):
     town_data = await requester.post_request("towns", town_obj.uuid)
     if town_obj.mayor != town_data[0]["mayor"]:
-        await town_transfer_trigger(town_obj.mayor, town_data[0]["mayor"], town_obj.id, requester)
+        await town_transfer_trigger(town_obj.mayor, rows_map[town_data[0]["mayor"]["uuid"]].id, town_obj.id, requester)
         town_obj.previous_mayors.append(town_obj.mayor)
-        town_obj.mayor = town_data[0]["mayor"]
+        town_obj.mayor = rows_map[town_data[0]["mayor"]["uuid"]].id
 
         async with in_transaction():
             await town_obj.save(update_fields=["mayor", "previous_mayors"])
