@@ -8,7 +8,7 @@ from tortoise import Tortoise
 
 from shared.database import Active
 from shared.http_requests import HTTPRequester
-from watcher.jobs.objective import Session
+from watcher.jobs.check_sessions import Session
 from watcher.jobs.objective import check_sessions, get_positions, update_map, check_town_blocks, clean_dead_sessions
 from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
 from tenacity import retry, stop_after_attempt, wait_exponential

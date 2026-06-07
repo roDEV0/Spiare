@@ -1,17 +1,9 @@
-from tortoise.transactions import in_transaction
-
-from shared.database import Sessions, Players, Towns, Active
-import json
-import datetime
-import time
+from shared.database import Towns, Active
 import os
 from PIL import Image
-import tortoise
 from io import BytesIO
 import asyncio
-from watcher.trigger.transfers import town_transfer_trigger
 import traceback
-import uuid
 from shared.utils import get_valid_data
 from watcher.jobs.check_sessions import handle_memory_sessions, get_lost_player_data, setup_lost_sessions, create_sessions
 
