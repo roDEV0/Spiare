@@ -12,8 +12,10 @@ async def take_player_snapshot():
         player_sessions = [
             session for session in sessions if session.player == player.id
         ]
-        player_town = [town for town in towns if town.id == player.town][0]
+        player_town = [town for town in towns if town.id == player.town]
+        player_town = player_town[0] if player_town else None
 
+        # TODO: Get rid of storing entire sessions as it is unnecessary
         sessions_dict = {}
         for session in player_sessions:
             sessions_dict[str(session.id)] = {
