@@ -1,4 +1,6 @@
-from shared.database import Towns, Active
+from tortoise.transactions import in_transaction
+
+from shared.database import Towns, Active, Players, Sessions
 import os
 from PIL import Image
 from io import BytesIO
@@ -11,6 +13,7 @@ from watcher.jobs.check_sessions import (
     setup_lost_sessions,
     create_sessions,
 )
+import datetime
 
 
 async def check_sessions(requester, tracker):
@@ -117,6 +120,24 @@ async def check_town_blocks(requester):
 
     except Exception as e:
         print(f"Error in check_town_blocks: {e}")
+
+
+async def check_active_players():
+    print("Checking active players...")
+    async with in_transaction():
+        players = await Players.all()
+        sessions = await Sessions.filter(
+            created_at__gte=datetime.datetime.now() - datetime.timedelta(days=40)
+        )
+
+    for player in players:
+        if player.id not in [session.player for session in sessions]:
+            player.active = False
+        else:
+            player.active = True
+
+    async with in_transaction():
+        await Players.bulk_update(players, fields=["active"])
 
 
 async def clean_dead_sessions(requester):

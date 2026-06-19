@@ -15,6 +15,7 @@ from watcher.jobs.objective import (
     update_map,
     check_town_blocks,
     clean_dead_sessions,
+    check_active_players,
 )
 from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -119,6 +120,17 @@ async def main():
         minutes=60,
         args=[requester],
         id="clean_dead_sessions",
+        replace_existing=True,
+        max_instances=1,
+    )
+
+    scheduler.add_job(
+        check_active_players,
+        "cron",
+        hour=12,
+        minute=0,
+        second=0,
+        id="check_active_players",
         replace_existing=True,
         max_instances=1,
     )

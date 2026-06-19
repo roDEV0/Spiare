@@ -4,10 +4,13 @@ from shared.database import TownSnapshot, PlayerSnapshot, Players, Towns, Sessio
 async def take_player_snapshot():
     snapshot_objects = []
     print("Taking player snapshots...")
-    sessions = await Sessions.all()
+    active_players = await Players.filter(active=True)
+    sessions = await Sessions.filter(
+        player__in=[player.id for player in active_players]
+    )
     towns = await Towns.all()
 
-    for player in await Players.all():
+    for player in await Players.filter(active=True):
 
         player_sessions = [
             session for session in sessions if session.player == player.id
