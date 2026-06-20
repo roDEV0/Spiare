@@ -28,12 +28,15 @@ async def check_active_players():
         sessions = await Sessions.filter(
             created_at__gte=datetime.datetime.now() - datetime.timedelta(days=7)
         )
+        print(f"Found {len(players)} players and {len(sessions)} sessions")
 
     for player in players:
         if player.id not in [session.player for session in sessions]:
             player.active = False
+            print(f"Player {player.username} is no longer active")
         else:
             player.active = True
+            print(f"Player {player.username} is still active")
 
     async with in_transaction():
         await Players.bulk_update(players, fields=["active"])
