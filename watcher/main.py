@@ -12,6 +12,8 @@ from watcher.jobs.check_sessions import Session
 from watcher.jobs.objective import (
     check_sessions,
     get_positions,
+)
+from watcher.jobs.maintenance import (
     update_map,
     check_town_blocks,
     clean_dead_sessions,
