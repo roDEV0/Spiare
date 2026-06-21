@@ -15,7 +15,7 @@ from watcher.jobs.objective import (
 )
 from watcher.jobs.maintenance import (
     update_map,
-    check_town_blocks,
+    check_town_stats,
     clean_dead_sessions,
     check_active_players,
 )
@@ -87,11 +87,11 @@ async def main():
         max_instances=1,
     )
     scheduler.add_job(
-        check_town_blocks,
+        check_town_stats(),
         "interval",
         minutes=60,
         args=[requester],
-        id="check_town_blocks",
+        id="check_town_stats",
         replace_existing=True,
         max_instances=1,
     )
