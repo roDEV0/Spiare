@@ -126,21 +126,12 @@ async def main():
         max_instances=1,
     )
 
-    # scheduler.add_job(
-    #     check_active_players,
-    #     "cron",
-    #     hour=12,
-    #     minute=0,
-    #     second=0,
-    #     id="check_active_players",
-    #     replace_existing=True,
-    #     max_instances=1,
-    # )
-
     scheduler.add_job(
         check_active_players,
-        "interval",
-        minutes=10,
+        "cron",
+        hour=12,
+        minute=0,
+        second=0,
         id="check_active_players",
         replace_existing=True,
         max_instances=1,
