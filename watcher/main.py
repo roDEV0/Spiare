@@ -153,6 +153,7 @@ async def main():
     await update_map(requester)
     await check_town_blocks(requester)
     await clean_dead_sessions(requester)
+    await check_active_players()
 
     scheduler.add_listener(job_error_listener, EVENT_JOB_ERROR)
 

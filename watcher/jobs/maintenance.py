@@ -26,7 +26,7 @@ async def check_active_players():
     async with in_transaction():
         players = await Players.all()
         sessions = await Sessions.filter(
-            created_at__gte=datetime.datetime.now() - datetime.timedelta(days=7)
+            start_date__gte=datetime.datetime.now() - datetime.timedelta(days=7)
         )
         print(f"Found {len(players)} players and {len(sessions)} sessions")
 
