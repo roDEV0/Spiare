@@ -60,7 +60,7 @@ async def update_map(requester):
     full_map.save("shared/map.png")
 
 
-async def check_town_blocks(requester):
+async def check_town_stats(requester):
     try:
         print("Checking townblocks...")
         towns = await requester.get_request("towns")
@@ -85,10 +85,11 @@ async def check_town_blocks(requester):
                     continue
 
                 town.town_blocks = data["coordinates"]["townBlocks"]
+                town.gold = data["stats"]["balance"]
                 to_update.append(town)
 
             if to_update:
-                await Towns.bulk_update(to_update, fields=["town_blocks"])
+                await Towns.bulk_update(to_update, fields=["town_blocks", "gold"])
 
         # Do in batches of 100 since it limits the amount of information you can be given at a time
         await asyncio.gather(

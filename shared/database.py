@@ -11,6 +11,7 @@ class Towns(Model):
     mayor = fields.IntField(null=True)
     previous_mayors = fields.JSONField(null=True, default=[])
     town_blocks = fields.JSONField(null=True, default=[])
+    gold = fields.IntField(null=True)
 
     class Meta:
         table = "towns"
@@ -22,6 +23,7 @@ class Players(Model):
     username = fields.CharField(max_length=100, unique=True, null=True)
     uuid = fields.CharField(max_length=100, unique=True)
     town = fields.IntField(null=True)
+    gold = fields.IntField(null=True)
     active = fields.BooleanField(default=True)
 
     class Meta:
@@ -94,7 +96,7 @@ class PlayerSnapshot(Model):
     id = fields.IntField(pk=True)
     player = fields.IntField()
     town = fields.IntField(null=True)
-    sessions = fields.JSONField(null=True, default=[])
+    gold = fields.IntField(null=True)
     total_sessions = fields.IntField(null=True)
     date = fields.DatetimeField(auto_now_add=True)
 
@@ -111,6 +113,7 @@ class TownSnapshot(Model):
     town_blocks = fields.JSONField(null=True, default=[])
     total_town_blocks = fields.IntField(null=True)
     total_citizens = fields.IntField(null=True)
+    gold = fields.IntField(null=True)
     date = fields.DatetimeField(auto_now_add=True)
 
     class Meta:

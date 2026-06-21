@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS players.players (
    username varchar(100) unique,
    uuid varchar(100) not null unique,
    town int,
+   gold int,
    active boolean default true
 );
 
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS towns.towns (
     uuid varchar(100) not null unique,
     mayor int,
     previous_mayors JSON,
+    gold int,
     town_blocks JSON
 );
 
@@ -94,8 +96,8 @@ CREATE TABLE IF NOT EXISTS player_snapshots.player_snapshots (
     id serial,
     player int not null,
     town int,
-    sessions json,
     total_sessions int,
+    gold int,
     date timestamptz not null default now(),
     PRIMARY KEY (id, date)
 ) PARTITION BY RANGE (date);
@@ -108,6 +110,7 @@ CREATE TABLE IF NOT EXISTS town_snapshots.town_snapshots (
     town_blocks JSON,
     total_town_blocks int,
     total_citizens int,
+    gold int,
     date timestamptz not null default now(),
     PRIMARY KEY (id, date)
 ) PARTITION BY RANGE (date);
