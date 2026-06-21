@@ -142,7 +142,7 @@ async def main():
     await check_sessions(requester, tracker)
     await get_positions(requester, tracker)
     await update_map(requester)
-    await check_town_blocks(requester)
+    await check_town_stats(requester)
     await clean_dead_sessions(requester)
     await check_active_players()
 
