@@ -87,7 +87,7 @@ async def main():
         max_instances=1,
     )
     scheduler.add_job(
-        check_town_stats(),
+        check_town_stats(requester),
         "interval",
         minutes=60,
         args=[requester],
