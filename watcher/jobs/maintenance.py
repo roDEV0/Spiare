@@ -39,7 +39,7 @@ async def check_active_players():
             print(f"Player {player.username} is still active")
 
     async with in_transaction():
-        await Players.bulk_update(players, fields=["active"])
+        await Players.bulk_update(players, fields=["active"], batch_size=100)
 
 
 async def update_map(requester):
