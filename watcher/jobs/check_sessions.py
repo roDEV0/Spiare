@@ -196,6 +196,10 @@ async def create_sessions(data_map, towns_map, rows_map, requester, tracker):
             if player_obj.username != data_map[player]["name"]:
                 await safe_username(player_obj, requester)
 
+            if player_obj.gold != data_map[player]["stats"]["balance"]:
+                player_obj.gold = data_map[player]["stats"]["balance"]
+                await player_obj.save(update_fields=["gold"])
+
             if data_map[player]["town"]["uuid"] in towns_map:
                 if player_obj.town != towns_map[data_map[player]["town"]["uuid"]].id:
                     await update_player_town(player_obj, requester)

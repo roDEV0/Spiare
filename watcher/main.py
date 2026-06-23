@@ -12,9 +12,12 @@ from watcher.jobs.check_sessions import Session
 from watcher.jobs.objective import (
     check_sessions,
     get_positions,
+)
+from watcher.jobs.maintenance import (
     update_map,
-    check_town_blocks,
+    check_town_stats,
     clean_dead_sessions,
+    check_active_players,
 )
 from watcher.jobs.snapshots import take_player_snapshot, take_town_snapshot
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -84,11 +87,11 @@ async def main():
         max_instances=1,
     )
     scheduler.add_job(
-        check_town_blocks,
+        check_town_stats,
         "interval",
         minutes=60,
         args=[requester],
-        id="check_town_blocks",
+        id="check_town_stats",
         replace_existing=True,
         max_instances=1,
     )
@@ -123,13 +126,25 @@ async def main():
         max_instances=1,
     )
 
+    scheduler.add_job(
+        check_active_players,
+        "cron",
+        hour=12,
+        minute=0,
+        second=0,
+        id="check_active_players",
+        replace_existing=True,
+        max_instances=1,
+    )
+
     await load_sessions(tracker)
 
     await check_sessions(requester, tracker)
     await get_positions(requester, tracker)
     await update_map(requester)
-    await check_town_blocks(requester)
+    await check_town_stats(requester)
     await clean_dead_sessions(requester)
+    await check_active_players()
 
     scheduler.add_listener(job_error_listener, EVENT_JOB_ERROR)
 
