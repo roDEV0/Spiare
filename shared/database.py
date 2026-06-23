@@ -109,7 +109,6 @@ class TownSnapshot(Model):
     id = fields.IntField(pk=True)
     town = fields.IntField()
     mayor = fields.IntField(null=True)
-    previous_mayors = fields.JSONField(null=True, default=[])
     town_blocks = fields.JSONField(null=True, default=[])
     total_town_blocks = fields.IntField(null=True)
     total_citizens = fields.IntField(null=True)

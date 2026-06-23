@@ -46,9 +46,7 @@ async def take_town_snapshot():
         town_snapshot = TownSnapshot(
             town=town.id,
             mayor=town.mayor,
-            previous_mayors=town.previous_mayors,
             town_blocks=town.town_blocks,
-            total_town_blocks=len(town.town_blocks),
             total_citizens=len(citizens),
             gold=town.gold,
             date=time_taken,
