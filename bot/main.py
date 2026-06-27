@@ -9,6 +9,8 @@ from shared.http_requests import HTTPRequester
 from bot.commands.tracking import Tracking
 from bot.commands.settings import Settings
 from bot.listeners.verification import Verification
+from bot.commands.maps import Maps
+from bot.commands.charts import Charts
 
 connection_config = {
     "connections": {
@@ -63,6 +65,8 @@ class BotContainer(commands.Bot):
         await self.add_cog(Tracking(self))
         await self.add_cog(Settings(self))
         await self.add_cog(Verification(self))
+        await self.add_cog(Maps(self))
+        await self.add_cog(Charts(self))
         print("Routines loaded!")
 
         await self.tree.sync()
